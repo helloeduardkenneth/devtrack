@@ -1,19 +1,15 @@
 import { createBrowserRouter } from 'react-router-dom'
 
-// Layouts
-import AppLayout from '@/layouts/AppLayout'
-import PublicLayout from '@/layouts/PublicLayout'
-
-// Public Pages
-import { Analytics, Applications, Dashboard, KanbanBoard } from '@/pages/app'
-
-// Wrappers
+import ProtectedRoute from '@/components/shared/ProtectedRoute'
 import {
   ForgotPasswordWrapper,
   LandingPageWrapper,
   LoginPageWrapper,
   SignUpPageWrapper,
 } from '@/components/shared/Wrappers'
+import AppLayout from '@/layouts/AppLayout'
+import PublicLayout from '@/layouts/PublicLayout'
+import { Analytics, Applications, Dashboard, KanbanBoard } from '@/pages/app'
 
 export const router = createBrowserRouter([
   {
@@ -38,7 +34,11 @@ export const router = createBrowserRouter([
     ],
   },
   {
-    element: <AppLayout />,
+    element: (
+      <ProtectedRoute>
+        <AppLayout />
+      </ProtectedRoute>
+    ),
     children: [
       {
         path: '/dashboard',

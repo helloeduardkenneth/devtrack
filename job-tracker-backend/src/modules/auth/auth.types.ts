@@ -2,6 +2,7 @@ export interface ISignUpRequestBody {
   full_name: string;
   email: string;
   password: string;
+  current_job?: string;
 }
 
 export interface ISignInRequestBody {
@@ -17,3 +18,4 @@ export interface IAuthResult {
   };
   token: string;
 }
+

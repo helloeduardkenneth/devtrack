@@ -24,7 +24,7 @@ import {
   XAxis,
   YAxis,
 } from 'recharts'
-import { AddJobModal } from '../../components/modals/AddJobModal'
+import AddJobModal from '../../components/modals/AddJobModal'
 
 // Mock data
 const weeklyData = [

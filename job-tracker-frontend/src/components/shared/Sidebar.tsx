@@ -1,4 +1,4 @@
-import devtrackLogo from '@/assets/devtrack_logo.png'
+import DEVTRACK_LOGO from '@/assets/devtrack_logo.png'
 import {
   BarChart3,
   Bell,
@@ -11,14 +11,25 @@ import {
 import { motion } from 'motion/react'
 import { useNavigate } from 'react-router-dom'
 
+import { useAuth } from '@/contexts/AuthContext'
+import { useGetUserProfile } from '@/queries/profile.queries'
+
 interface SidebarProps {
   activeTab: string
   setActiveTab: (tab: string) => void
-  onLogout: () => void
 }
 
-export const Sidebar = ({ activeTab, setActiveTab, onLogout }: SidebarProps) => {
+const Sidebar = ({ activeTab, setActiveTab }: SidebarProps) => {
   const navigate = useNavigate()
+  const { logout } = useAuth()
+
+  const { data: userData, isLoading } = useGetUserProfile()
+
+  const handleLogout = () => {
+    logout()
+    navigate('/login')
+  }
+
   const menuItems = [
     { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard' },
     { id: 'applications', icon: List, label: 'Applications' },
@@ -35,7 +46,7 @@ export const Sidebar = ({ activeTab, setActiveTab, onLogout }: SidebarProps) => 
         aria-label="Go to landing page"
       >
         <img
-          src={devtrackLogo}
+          src={DEVTRACK_LOGO}
           alt="DevTrack logo"
           className="h-10 w-10 rounded-xl object-contain"
         />
@@ -75,15 +86,38 @@ export const Sidebar = ({ activeTab, setActiveTab, onLogout }: SidebarProps) => 
         </button>
 
         <div className="flex items-center gap-3 rounded-xl bg-slate-50 px-4 py-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-linear-to-br from-blue-500 to-indigo-600 text-sm font-medium text-white">
-            EK
-          </div>
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-medium text-slate-900">Eduard Kenneth</p>
-            <p className="truncate text-xs text-slate-500">Senior Dev</p>
-          </div>
+          {isLoading ? (
+            <>
+              {/* Avatar skeleton */}
+              <div className="h-10 w-10 animate-pulse rounded-full bg-slate-200" />
+
+              {/* Text skeleton */}
+              <div className="min-w-0 flex-1 space-y-2">
+                <div className="h-3 w-24 animate-pulse rounded bg-slate-200" />
+                <div className="h-3 w-16 animate-pulse rounded bg-slate-200" />
+              </div>
+            </>
+          ) : (
+            <>
+              {/* Avatar */}
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-linear-to-br from-blue-500 to-indigo-600 text-sm font-medium text-white">
+                {userData?.full_name?.trim()?.charAt(0).toUpperCase() ?? 'U'}
+              </div>
+
+              {/* User info */}
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-medium text-slate-900">
+                  {userData?.full_name ?? 'User'}
+                </p>
+                <p className="truncate text-xs text-slate-500">
+                  {userData?.current_job ?? 'Unemployed'}
+                </p>
+              </div>
+            </>
+          )}
+
           <button
-            onClick={onLogout}
+            onClick={handleLogout}
             className="text-slate-400 transition-colors hover:text-red-600"
             title="Logout"
           >
@@ -94,3 +128,5 @@ export const Sidebar = ({ activeTab, setActiveTab, onLogout }: SidebarProps) => 
     </aside>
   )
 }
+
+export default Sidebar

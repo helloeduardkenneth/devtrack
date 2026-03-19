@@ -26,7 +26,7 @@ interface AddJobModalProps {
   editMode?: boolean
 }
 
-export const AddJobModal: React.FC<AddJobModalProps> = ({
+const AddJobModal: React.FC<AddJobModalProps> = ({
   isOpen,
   onClose,
   editMode = false,
@@ -729,3 +729,5 @@ export const AddJobModal: React.FC<AddJobModalProps> = ({
     </AnimatePresence>
   )
 }
+
+export default AddJobModal

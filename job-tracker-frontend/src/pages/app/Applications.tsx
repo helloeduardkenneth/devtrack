@@ -19,7 +19,7 @@ import {
   Square,
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'motion/react'
-import { AddJobModal } from '@/components/modals/AddJobModal'
+import AddJobModal from '@/components/modals/AddJobModal'
 import { Dropdown } from '@/components/shared/Dropdown'
 import { MOCK_APPLICATIONS, type ApplicationRecord } from '@/pages/app/mockData'
 

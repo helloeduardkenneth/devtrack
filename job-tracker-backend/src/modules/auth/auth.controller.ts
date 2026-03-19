@@ -1,8 +1,9 @@
 import type { Request, Response } from "express";
 
+import { verifyToken, type ITokenPayload } from "../../shared/helpers/jwt";
+import { authenticateUser, createUser, getUserById } from "./auth.service";
 import type { ISignInRequestBody, ISignUpRequestBody } from "./auth.types";
 import { SignInSchema, SignUpSchema } from "./auth.validation";
-import { authenticateUser, createUser } from "./auth.service";
 
 export const signUp = async (
   req: Request<{}, {}, ISignUpRequestBody>,
@@ -54,5 +55,40 @@ export const signIn = async (
   } catch (error) {
     console.error("Signin error:", error);
     return res.status(500).json({ error: "Internal server error." });
+  }
+};
+
+export const getUserProfile = async (req: Request, res: Response) => {
+  try {
+    const authHeader = req.headers.authorization;
+
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return res.status(401).json({ error: "Unauthorized." });
+    }
+
+    const token = authHeader.split(" ")[1];
+
+    console.log(token);
+
+    if (!token) {
+      return res.status(401).json({ error: "Unauthorized." });
+    }
+
+    const payload = verifyToken(token) as ITokenPayload;
+
+    const user = await getUserById(payload.userId);
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    return res.status(201).json({
+      user_id: user.id,
+      email: user.email,
+      full_name: user.full_name,
+      current_job: user.current_job,
+    });
+  } catch (error) {
+    return res.status(401).json({ error: "Unautorized" });
   }
 };

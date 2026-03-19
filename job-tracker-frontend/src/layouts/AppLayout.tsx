@@ -1,8 +1,9 @@
-import { AddJobModal } from '@/components/modals/AddJobModal'
-import { Header } from '@/components/shared/Header'
-import { Sidebar } from '@/components/shared/Sidebar'
 import { useEffect, useState } from 'react'
 import { Outlet, useLocation, useNavigate } from 'react-router-dom'
+
+import AddJobModal from '@/components/modals/AddJobModal'
+import Header from '@/components/shared/Header'
+import Sidebar from '@/components/shared/Sidebar'
 
 const AppLayout = () => {
   const navigate = useNavigate()
@@ -69,21 +70,13 @@ const AppLayout = () => {
     }
   }
 
-  const handleLogout = () => {
-    navigate('/login')
-  }
-
   const handleAddJob = () => {
     setIsAddJobModalOpen(true)
   }
 
   return (
     <div className="min-h-screen bg-slate-50">
-      <Sidebar
-        activeTab={activeTab}
-        setActiveTab={handleTabChange}
-        onLogout={handleLogout}
-      />
+      <Sidebar activeTab={activeTab} setActiveTab={handleTabChange} />
       <div className="ml-64">
         <Header onAddJob={handleAddJob} />
         <main className="p-4 sm:p-8">

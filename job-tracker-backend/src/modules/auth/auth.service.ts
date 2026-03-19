@@ -8,8 +8,7 @@ import type {
   ISignUpRequestBody,
 } from "./auth.types";
 
-
-// Create a new user in the database 
+// Create a new user in the database
 // and return the user data along with a JWT token
 
 export const createUser = async (
@@ -55,9 +54,25 @@ export const authenticateUser = async (
     id: user.id,
     email: user.email,
     full_name: user.full_name,
+    current_job: user.current_job,
   };
 
   const token = generateToken({ userId: user.id, email: user.email });
 
   return { user: safeUser, token };
+};
+
+
+// Get User Details 
+
+export const getUserById = async (userId: number) => {
+  return await prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      id: true,
+      email: true,
+      full_name: true,
+      current_job: true,
+    },
+  });
 };

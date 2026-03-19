@@ -4,6 +4,18 @@
 @import 'tailwindcss';
 @import 'tw-animate-css';
 
+/* Hide native password reveal icons to avoid duplicate eye buttons */
+input[type='password']::-ms-reveal,
+input[type='password']::-ms-clear {
+  display: none;
+}
+
+input[type='password']::-webkit-credentials-auto-fill-button {
+  visibility: hidden;
+  position: absolute;
+  right: 0;
+}
+
 :root {
   --font-sans:
     'Poppins', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji',

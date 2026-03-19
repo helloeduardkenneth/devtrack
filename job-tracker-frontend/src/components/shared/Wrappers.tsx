@@ -1,9 +1,9 @@
 import { useNavigate } from 'react-router-dom'
 
 import { LandingPage } from '@/pages/public/LandingPage'
-import { LoginPage } from '@/pages/public/LoginPage'
+import LoginPage from '@/pages/public/LoginPage'
 import { ForgotPassword } from '@/pages/public/ForgotPassword'
-import { SignUpPage } from '@/pages/public/SignUpPage'
+import SignUpPage from '@/pages/public/SignUpPage'
 
 export function LandingPageWrapper() {
   const navigate = useNavigate()

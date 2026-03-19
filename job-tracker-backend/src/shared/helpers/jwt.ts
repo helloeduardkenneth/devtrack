@@ -2,7 +2,7 @@ import jwt, { type JwtPayload, type SignOptions } from "jsonwebtoken";
 
 // Load JWT configuration from environment variables
 const JWT_EXPIRES_IN: SignOptions["expiresIn"] =
-  (process.env.JWT_EXPIRES_IN as SignOptions["expiresIn"]) ?? "7d"; // supports "7d", "1h", or seconds
+  (process.env.JWT_EXPIRES_IN as SignOptions["expiresIn"]) ?? "7d";
 const JWT_ISSUER = process.env.JWT_ISSUER;
 const JWT_AUDIENCE = process.env.JWT_AUDIENCE;
 

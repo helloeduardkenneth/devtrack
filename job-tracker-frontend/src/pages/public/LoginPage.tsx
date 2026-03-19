@@ -1,8 +1,25 @@
-﻿import devtrackLogo from '@/assets/devtrack_logo.png'
-import { ImageWithFallback } from '@/components/shared/ImageWithFallback'
+import { zodResolver } from '@hookform/resolvers/zod'
 import { Chrome, Eye, EyeOff, Github } from 'lucide-react'
 import { motion } from 'motion/react'
-import React, { useState } from 'react'
+import { useState } from 'react'
+import { useForm } from 'react-hook-form'
+import { toast } from 'sonner'
+
+import devtrackLogo from '@/assets/devtrack_logo.png'
+import { Button } from '@/components/ui/button'
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form'
+import { Input } from '@/components/ui/input'
+import { ImageWithFallback } from '@/components/shared/ImageWithFallback'
+import { useAuth } from '@/contexts/AuthContext'
+import { useSignInMutation } from '@/queries/signin.mutation'
+import { signInSchema, type SignInFormValues } from '@/validations/auth.validation'
 
 interface LoginProps {
   onLogin: () => void
@@ -11,24 +28,41 @@ interface LoginProps {
   onForgotPassword?: () => void
 }
 
-export const LoginPage: React.FC<LoginProps> = ({
+const LoginPage = ({
   onLogin,
   onBackToLanding,
   onSwitchToSignUp,
   onForgotPassword,
-}) => {
+}: LoginProps) => {
   const [showPassword, setShowPassword] = useState(false)
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
+  const [rememberMe, setRememberMe] = useState(false)
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
+  const { login } = useAuth()
+
+  const form = useForm<SignInFormValues>({
+    resolver: zodResolver(signInSchema),
+    defaultValues: {
+      email: '',
+      password: '',
+    },
+    mode: 'onTouched',
+  })
+
+  const signInMutation = useSignInMutation((data) => {
+    const token = (data as { data?: { token?: string } })?.data?.token
+    if (token) {
+      login(token)
+    }
+    toast.success('Signed in successfully!')
     onLogin()
+  })
+
+  const handleSubmit = (values: SignInFormValues) => {
+    signInMutation.mutate(values)
   }
 
   return (
     <div className="flex min-h-screen w-full bg-white">
-      {/* Left Side: Branding & Info */}
       <div className="relative hidden overflow-hidden bg-blue-600 lg:flex lg:w-1/2">
         <div className="absolute inset-0 z-0 opacity-40">
           <ImageWithFallback
@@ -48,7 +82,9 @@ export const LoginPage: React.FC<LoginProps> = ({
               alt="DevTrack logo"
               className="h-10 w-10 rounded-xl bg-white object-contain p-1.5 shadow-xl"
             />
-            <span className="text-2xl font-bold tracking-tight text-white">DevTrack</span>
+            <span className="text-2xl font-bold tracking-tight text-white">
+              DevTrack
+            </span>
           </button>
 
           <div className="max-w-md">
@@ -83,7 +119,6 @@ export const LoginPage: React.FC<LoginProps> = ({
         </div>
       </div>
 
-      {/* Right Side: Login Form */}
       <div className="flex w-full items-center justify-center p-8 lg:w-1/2 lg:p-16">
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
@@ -105,82 +140,105 @@ export const LoginPage: React.FC<LoginProps> = ({
           </button>
 
           <div className="mb-8">
-            <h2 className="mb-2 text-3xl font-extrabold text-slate-900">Welcome back</h2>
+            <h2 className="mb-2 text-3xl font-extrabold text-slate-900">
+              Welcome back
+            </h2>
             <p className="font-medium text-slate-500">
               Enter your credentials to access your account
             </p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-5">
-            <div className="space-y-1">
-              <label className="ml-1 text-sm font-bold text-slate-700">
-                Email Address
-              </label>
-              <input
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="alex@example.com"
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm transition-all outline-none placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-5">
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem className="space-y-1">
+                    <FormLabel className="ml-1 text-sm font-bold text-slate-700">
+                      Email Address
+                    </FormLabel>
+                    <FormControl>
+                      <Input
+                        type="email"
+                        placeholder="alex@example.com"
+                        className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm transition-all outline-none placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-            </div>
 
-            <div className="space-y-1">
-              <div className="flex items-center justify-between px-1">
-                <label className="text-sm font-bold text-slate-700">Password</label>
-                <button
-                  type="button"
-                  onClick={onForgotPassword}
-                  className="text-xs font-bold text-blue-600 hover:text-blue-700"
-                >
-                  Forgot password?
-                </button>
-              </div>
-              <div className="relative">
+              <FormField
+                control={form.control}
+                name="password"
+                render={({ field }) => (
+                  <FormItem className="space-y-1">
+                    <div className="flex items-center justify-between px-1">
+                      <FormLabel className="text-sm font-bold text-slate-700">
+                        Password
+                      </FormLabel>
+                      <button
+                        type="button"
+                        onClick={onForgotPassword}
+                        className="text-xs font-bold text-blue-600 hover:text-blue-700"
+                      >
+                        Forgot password?
+                      </button>
+                    </div>
+                    <FormControl>
+                      <div className="relative">
+                        <Input
+                          type={showPassword ? 'text' : 'password'}
+                          placeholder="••••••••"
+                          className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm transition-all outline-none placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
+                          {...field}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          className="absolute top-1/2 right-4 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                        >
+                          {showPassword ? (
+                            <EyeOff className="h-4 w-4" />
+                          ) : (
+                            <Eye className="h-4 w-4" />
+                          )}
+                        </button>
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <div className="flex items-center">
                 <input
-                  type={showPassword ? 'text' : 'password'}
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm transition-all outline-none placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
+                  type="checkbox"
+                  id="remember"
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
+                  className="h-4 w-4 cursor-pointer rounded border-slate-300 bg-slate-50 text-blue-600 focus:ring-2 focus:ring-blue-500"
                 />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute top-1/2 right-4 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                <label
+                  htmlFor="remember"
+                  className="ml-2 cursor-pointer text-sm font-medium text-slate-600"
                 >
-                  {showPassword ? (
-                    <EyeOff className="h-4 w-4" />
-                  ) : (
-                    <Eye className="h-4 w-4" />
-                  )}
-                </button>
+                  Remember me for 30 days
+                </label>
               </div>
-            </div>
 
-            <div className="flex items-center">
-              <input
-                type="checkbox"
-                id="remember"
-                className="h-4 w-4 cursor-pointer rounded border-slate-300 bg-slate-50 text-blue-600 focus:ring-2 focus:ring-blue-500"
-              />
-              <label
-                htmlFor="remember"
-                className="ml-2 cursor-pointer text-sm font-medium text-slate-600"
+              <Button
+                type="submit"
+                disabled={signInMutation.isPending}
+                className="w-full rounded-xl bg-blue-600 py-3.5 font-bold text-white shadow-lg shadow-blue-500/20 transition-all hover:bg-blue-700 active:scale-[0.98]"
               >
-                Remember me for 30 days
-              </label>
-            </div>
-
-            <button
-              type="submit"
-              className="w-full rounded-xl bg-blue-600 py-3.5 font-bold text-white shadow-lg shadow-blue-500/20 transition-all hover:bg-blue-700 active:scale-[0.98]"
-            >
-              Sign in
-            </button>
-          </form>
+                {signInMutation.isPending ? 'Signing in...' : 'Sign in'}
+              </Button>
+            </form>
+          </Form>
 
           <div className="relative my-8">
             <div className="absolute inset-0 flex items-center">
@@ -194,14 +252,20 @@ export const LoginPage: React.FC<LoginProps> = ({
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            <button className="flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white py-3 text-sm font-bold text-slate-700 transition-all hover:border-slate-300 hover:bg-slate-50 active:scale-[0.98]">
+            <Button
+              variant="outline"
+              className="flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white py-3 text-sm font-bold text-slate-700 transition-all hover:border-slate-300 hover:bg-slate-50 active:scale-[0.98]"
+            >
               <Chrome className="h-4 w-4" />
               Google
-            </button>
-            <button className="flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white py-3 text-sm font-bold text-slate-700 transition-all hover:border-slate-300 hover:bg-slate-50 active:scale-[0.98]">
+            </Button>
+            <Button
+              variant="outline"
+              className="flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white py-3 text-sm font-bold text-slate-700 transition-all hover:border-slate-300 hover:bg-slate-50 active:scale-[0.98]"
+            >
               <Github className="h-4 w-4" />
               GitHub
-            </button>
+            </Button>
           </div>
 
           <p className="mt-10 text-center text-sm font-medium text-slate-500">
@@ -218,3 +282,5 @@ export const LoginPage: React.FC<LoginProps> = ({
     </div>
   )
 }
+
+export default LoginPage

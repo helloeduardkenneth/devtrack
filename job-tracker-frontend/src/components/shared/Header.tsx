@@ -4,7 +4,7 @@ interface HeaderProps {
   onAddJob: () => void
 }
 
-export const Header = ({ onAddJob }: HeaderProps) => {
+const Header = ({ onAddJob }: HeaderProps) => {
   return (
     <header className="sticky top-0 z-40 flex h-20 items-center justify-between border-b border-slate-200 bg-white px-8">
       <div className="relative w-96">
@@ -33,3 +33,5 @@ export const Header = ({ onAddJob }: HeaderProps) => {
     </header>
   )
 }
+
+export default Header

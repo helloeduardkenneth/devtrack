@@ -1,4 +1,4 @@
-﻿import { AddJobModal } from '@/components/modals/AddJobModal'
+﻿import AddJobModal from '@/components/modals/AddJobModal'
 import { MOCK_APPLICATIONS, type ApplicationRecord } from '@/pages/app/mockData'
 import {
   Building2,
