@@ -6,6 +6,7 @@ import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 
 import devtrackLogo from '@/assets/devtrack_logo.png'
+import { ImageWithFallback } from '@/components/shared/ImageWithFallback'
 import { Button } from '@/components/ui/button'
 import {
   Form,
@@ -16,7 +17,6 @@ import {
   FormMessage,
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
-import { ImageWithFallback } from '@/components/shared/ImageWithFallback'
 import { useAuth } from '@/contexts/AuthContext'
 import { useSignInMutation } from '@/queries/signin.mutation'
 import { signInSchema, type SignInFormValues } from '@/validations/auth.validation'
@@ -82,9 +82,7 @@ const LoginPage = ({
               alt="DevTrack logo"
               className="h-10 w-10 rounded-xl bg-white object-contain p-1.5 shadow-xl"
             />
-            <span className="text-2xl font-bold tracking-tight text-white">
-              DevTrack
-            </span>
+            <span className="text-2xl font-bold tracking-tight text-white">DevTrack</span>
           </button>
 
           <div className="max-w-md">
@@ -140,9 +138,7 @@ const LoginPage = ({
           </button>
 
           <div className="mb-8">
-            <h2 className="mb-2 text-3xl font-extrabold text-slate-900">
-              Welcome back
-            </h2>
+            <h2 className="mb-2 text-3xl font-extrabold text-slate-900">Welcome back</h2>
             <p className="font-medium text-slate-500">
               Enter your credentials to access your account
             </p>

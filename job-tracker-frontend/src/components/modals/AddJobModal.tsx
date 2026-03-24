@@ -1,4 +1,5 @@
-import { Dropdown } from '@/components/shared/Dropdown'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { useMutation } from '@tanstack/react-query'
 import {
   AlertCircle,
   Briefcase,
@@ -9,16 +10,23 @@ import {
   FileText,
   Globe,
   Loader2,
-  Mail,
-  MapPin,
-  Phone,
   Sparkles,
   Upload,
   User,
   X,
 } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
-import React, { useState } from 'react'
+import { type ChangeEvent, type DragEvent, useEffect, useMemo, useState } from 'react'
+import { useForm } from 'react-hook-form'
+import { toast } from 'sonner'
+import { z } from 'zod'
+
+import { Dropdown } from '@/components/shared/Dropdown'
+import { Button } from '@/components/ui/button'
+import { Form } from '@/components/ui/form'
+import { Input } from '@/components/ui/input'
+import { addJobDefaultValues, jobSchema } from '@/validations/job.validation'
+import type { AddJobFormValues } from '@/validations/job.validation'
 
 interface AddJobModalProps {
   isOpen: boolean
@@ -26,102 +34,96 @@ interface AddJobModalProps {
   editMode?: boolean
 }
 
-const AddJobModal: React.FC<AddJobModalProps> = ({
+const AddJobModal = ({
   isOpen,
   onClose,
   editMode = false,
-}) => {
+}: AddJobModalProps) => {
   const [isAiProcessing, setIsAiProcessing] = useState(false)
-  const [jobUrl, setJobUrl] = useState('')
-  const [isUrlValid, setIsUrlValid] = useState<boolean | null>(null)
   const [companyLogo, setCompanyLogo] = useState<string | null>(null)
   const [logoFile, setLogoFile] = useState<File | null>(null)
   const [isDraggingLogo, setIsDraggingLogo] = useState(false)
 
-  // Form state
-  const [formData, setFormData] = useState({
-    company: '',
-    position: '',
-    jobUrl: '',
-    location: '',
-    jobType: 'Full-time',
-    workMode: 'Remote',
-    salaryMin: '',
-    salaryMax: '',
-    status: 'Applied',
-    appliedDate: new Date().toISOString().split('T')[0],
-    priority: 'Medium',
-    source: 'LinkedIn',
-    jobDescription: '',
-    requirements: '',
-    notes: '',
-    recruiterName: '',
-    recruiterEmail: '',
-    recruiterPhone: '',
+  const form = useForm<AddJobFormValues>({
+    resolver: zodResolver(jobSchema),
+    defaultValues: addJobDefaultValues,
+    mode: 'onChange',
+  })
+
+  const { register, setValue, watch, reset, formState } = form
+  const { errors, isSubmitting, isValid } = formState
+
+  const jobUrl = watch('jobUrl')
+  const isUrlValid = useMemo(() => {
+    if (!jobUrl?.trim()) return null
+    return z.url().safeParse(jobUrl.trim()).success
+  }, [jobUrl])
+
+  const saveJobMutation = useMutation({
+    mutationKey: ['jobs', editMode ? 'update' : 'create'],
+    mutationFn: async (payload: AddJobFormValues) => {
+      await new Promise((resolve) => setTimeout(resolve, 800))
+      return payload
+    },
+    onSuccess: () => {
+      toast.success(editMode ? 'Application updated successfully.' : 'Application saved successfully.')
+      reset(addJobDefaultValues)
+      setCompanyLogo(null)
+      setLogoFile(null)
+      onClose()
+    },
+    onError: () => {
+      toast.error('Failed to save application. Please try again.')
+    },
   })
 
   const handleLogoUpload = (file: File) => {
-    if (file && file.type.startsWith('image/')) {
-      if (file.size > 2 * 1024 * 1024) {
-        alert('Image size should be less than 2MB')
-        return
-      }
-
-      setLogoFile(file)
-      const reader = new FileReader()
-      reader.onloadend = () => {
-        setCompanyLogo(reader.result as string)
-      }
-      reader.readAsDataURL(file)
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please upload a valid image file.')
+      return
     }
+
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error('Image size should be less than 2MB.')
+      return
+    }
+
+    setLogoFile(file)
+    const reader = new FileReader()
+    reader.onloadend = () => {
+      setCompanyLogo(reader.result as string)
+    }
+    reader.readAsDataURL(file)
   }
 
-  const handleLogoDrop = (e: React.DragEvent) => {
+  const handleLogoDrop = (e: DragEvent<HTMLDivElement>) => {
     e.preventDefault()
     setIsDraggingLogo(false)
 
     const file = e.dataTransfer.files[0]
-    if (file) {
-      handleLogoUpload(file)
-    }
+    if (file) handleLogoUpload(file)
   }
 
-  const handleLogoFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleLogoFileInput = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
-    if (file) {
-      handleLogoUpload(file)
-    }
-  }
-
-  const handleUrlChange = (value: string) => {
-    setJobUrl(value)
-    setFormData({ ...formData, jobUrl: value })
-
-    // Simple URL validation
-    try {
-      new URL(value)
-      setIsUrlValid(true)
-    } catch {
-      setIsUrlValid(value.length > 0 ? false : null)
-    }
+    if (file) handleLogoUpload(file)
   }
 
   const handlePasteJobDescription = async () => {
     try {
       const text = await navigator.clipboard.readText()
-      setFormData({ ...formData, jobDescription: text })
-    } catch (err) {
-      console.error('Failed to read clipboard:', err)
+      setValue('jobDescription', text, { shouldDirty: true, shouldValidate: true })
+      toast.success('Job description pasted.')
+    } catch {
+      toast.error('Clipboard access failed. Paste manually instead.')
     }
   }
 
   const handleAiAutoFill = () => {
     setIsAiProcessing(true)
 
-    // Simulate AI processing
     setTimeout(() => {
-      setFormData({
-        ...formData,
+      const aiResult: Partial<AddJobFormValues> = {
         company: 'GCash',
         position: 'Senior Frontend Engineer',
         location: 'BGC, Taguig',
@@ -129,23 +131,39 @@ const AddJobModal: React.FC<AddJobModalProps> = ({
         salaryMax: '180000',
         requirements:
           '• 5+ years of React experience\n• Strong TypeScript skills\n• Experience with modern frontend tooling and API integration\n• Experience working with fintech or high-traffic platforms',
+      }
+
+      Object.entries(aiResult).forEach(([key, value]) => {
+        setValue(key as keyof AddJobFormValues, value as string, {
+          shouldDirty: true,
+          shouldValidate: true,
+        })
       })
+
+      toast.success('AI autofill completed.')
       setIsAiProcessing(false)
-    }, 2000)
+    }, 1500)
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    console.log('Form submitted:', formData)
-    onClose()
+  const onSubmit = (values: AddJobFormValues) => {
+    saveJobMutation.mutate(values)
   }
+
+  useEffect(() => {
+    if (!isOpen) {
+      reset(addJobDefaultValues)
+      setCompanyLogo(null)
+      setLogoFile(null)
+      setIsDraggingLogo(false)
+      setIsAiProcessing(false)
+    }
+  }, [isOpen, reset])
 
   if (!isOpen) return null
 
   return (
     <AnimatePresence>
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-        {/* Backdrop */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -154,35 +172,27 @@ const AddJobModal: React.FC<AddJobModalProps> = ({
           className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm"
         />
 
-        {/* Modal */}
         <motion.div
           initial={{ scale: 0.95, opacity: 0, y: 20 }}
           animate={{ scale: 1, opacity: 1, y: 0 }}
           exit={{ scale: 0.95, opacity: 0, y: 20 }}
           className="relative flex max-h-[90vh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
         >
-          {/* Header */}
           <div className="sticky top-0 z-10 flex items-center justify-between border-b border-slate-200 bg-white p-6">
             <div>
               <h2 className="text-2xl font-semibold text-slate-900">
                 {editMode ? 'Edit Application' : 'Add New Application'}
               </h2>
-              <p className="mt-1 text-sm text-slate-500">
-                Track a new opportunity in your pipeline
-              </p>
+              <p className="mt-1 text-sm text-slate-500">Track a new opportunity in your pipeline</p>
             </div>
-            <button
-              onClick={onClose}
-              className="rounded-xl p-2 transition-colors hover:bg-slate-100"
-            >
+            <Button type="button" variant="ghost" size="icon" onClick={onClose}>
               <X className="h-5 w-5 text-slate-400" />
-            </button>
+            </Button>
           </div>
 
-          {/* Form Content - Scrollable */}
           <div className="flex-1 overflow-y-auto">
-            <form onSubmit={handleSubmit} className="space-y-8 p-6">
-              {/* AI Assistant Section - Highlighted */}
+            <Form {...form}>
+              <form id="add-job-form" onSubmit={form.handleSubmit(onSubmit)} className="space-y-8 p-6">
               <div className="space-y-4 rounded-2xl border-2 border-blue-200 bg-linear-to-br from-blue-50 to-indigo-50 p-6">
                 <div className="mb-4 flex items-center gap-3">
                   <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600">
@@ -190,27 +200,21 @@ const AddJobModal: React.FC<AddJobModalProps> = ({
                   </div>
                   <div>
                     <h3 className="font-semibold text-slate-900">AI Assistant</h3>
-                    <p className="text-xs text-slate-600">
-                      Let AI help you fill out the form automatically
-                    </p>
+                    <p className="text-xs text-slate-600">Let AI help you fill out the form automatically</p>
                   </div>
                 </div>
 
                 <div className="flex gap-3">
-                  <button
-                    type="button"
-                    onClick={handlePasteJobDescription}
-                    className="flex flex-1 items-center justify-center gap-2 rounded-xl border-2 border-blue-200 bg-white px-4 py-3 font-medium text-slate-700 shadow-sm transition-all hover:bg-blue-50"
-                  >
+                  <Button type="button" variant="outline" className="flex-1" onClick={handlePasteJobDescription}>
                     <ClipboardPaste className="h-4 w-4" />
                     Paste Job Description
-                  </button>
+                  </Button>
 
-                  <button
+                  <Button
                     type="button"
+                    className="flex-1 bg-blue-600 hover:bg-blue-700"
                     onClick={handleAiAutoFill}
                     disabled={isAiProcessing}
-                    className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-linear-to-r from-blue-600 to-indigo-600 px-4 py-3 font-medium text-white shadow-lg shadow-blue-600/30 transition-all hover:from-blue-700 hover:to-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     {isAiProcessing ? (
                       <>
@@ -223,21 +227,10 @@ const AddJobModal: React.FC<AddJobModalProps> = ({
                         Auto-fill with AI
                       </>
                     )}
-                  </button>
+                  </Button>
                 </div>
-
-                {isAiProcessing && (
-                  <div className="rounded-lg border border-blue-200 bg-white/80 p-3">
-                    <p className="flex items-center gap-2 text-xs text-slate-600">
-                      <Loader2 className="h-3 w-3 animate-spin" />
-                      AI is parsing the job description and extracting relevant
-                      information...
-                    </p>
-                  </div>
-                )}
               </div>
 
-              {/* SECTION 1 - JOB DETAILS */}
               <div className="space-y-6">
                 <div className="flex items-center gap-3 border-b border-slate-200 pb-3">
                   <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-100">
@@ -247,31 +240,14 @@ const AddJobModal: React.FC<AddJobModalProps> = ({
                 </div>
 
                 <div className="grid grid-cols-2 gap-6">
-                  {/* Company Name */}
                   <div className="col-span-2 md:col-span-1">
-                    <label className="mb-2 block text-sm font-bold text-slate-700">
-                      Company Name <span className="text-red-500">*</span>
-                    </label>
-                    <div className="relative">
-                      <Briefcase className="absolute top-1/2 left-4 h-5 w-5 -translate-y-1/2 text-slate-400" />
-                      <input
-                        type="text"
-                        value={formData.company}
-                        onChange={(e) =>
-                          setFormData({ ...formData, company: e.target.value })
-                        }
-                        placeholder="e.g. GCash, Globe Telecom, Maya"
-                        required
-                        className="w-full rounded-xl border border-slate-200 bg-white py-3 pr-4 pl-12 text-sm text-slate-900 transition-all outline-none placeholder:text-slate-400 focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10"
-                      />
-                    </div>
+                    <label className="mb-2 block text-sm font-bold text-slate-700">Company Name *</label>
+                    <Input {...register('company')} placeholder="e.g. GCash, Globe Telecom, Maya" className="h-12" />
+                    {errors.company && <p className="mt-1 text-xs text-red-600">{errors.company.message}</p>}
                   </div>
 
-                  {/* Company Logo Upload */}
                   <div className="col-span-2 md:col-span-1">
-                    <label className="mb-2 block text-sm font-bold text-slate-700">
-                      Company Logo
-                    </label>
+                    <label className="mb-2 block text-sm font-bold text-slate-700">Company Logo</label>
                     <div
                       onDrop={handleLogoDrop}
                       onDragOver={(e) => {
@@ -304,76 +280,45 @@ const AddJobModal: React.FC<AddJobModalProps> = ({
                             className="h-8 w-8 rounded-lg border border-slate-200 bg-white object-contain"
                           />
                           <div className="min-w-0 flex-1">
-                            <p className="truncate text-xs font-medium text-slate-700">
-                              {logoFile?.name || 'Logo loaded'}
-                            </p>
-                            <p className="text-[10px] text-green-600">Ready to upload</p>
+                            <p className="truncate text-xs font-medium text-slate-700">{logoFile?.name || 'Logo loaded'}</p>
                           </div>
-                          <button
+                          <Button
                             type="button"
+                            size="icon-xs"
+                            variant="ghost"
                             onClick={(e) => {
                               e.stopPropagation()
                               setCompanyLogo(null)
                               setLogoFile(null)
                             }}
-                            className="rounded p-1 transition-colors hover:bg-slate-200"
                           >
                             <X className="h-4 w-4 text-slate-500" />
-                          </button>
+                          </Button>
                         </div>
                       ) : (
                         <div className="flex items-center gap-2 text-slate-500">
                           <Upload className="h-4 w-4" />
-                          <span className="text-xs font-medium">
-                            {isDraggingLogo ? 'Drop logo here' : 'Upload or drag logo'}
-                          </span>
+                          <span className="text-xs font-medium">{isDraggingLogo ? 'Drop logo here' : 'Upload or drag logo'}</span>
                         </div>
                       )}
                     </div>
-                    <p className="mt-1.5 text-[10px] text-slate-500">
-                      PNG, JPG or SVG. Max 2MB. Auto-fetches on company name entry.
-                    </p>
                   </div>
 
-                  {/* Position Title */}
                   <div className="col-span-2 md:col-span-1">
-                    <label className="mb-2 block text-sm font-bold text-slate-700">
-                      Position Title <span className="text-red-500">*</span>
-                    </label>
-                    <div className="relative">
-                      <FileText className="absolute top-1/2 left-4 h-5 w-5 -translate-y-1/2 text-slate-400" />
-                      <input
-                        type="text"
-                        value={formData.position}
-                        onChange={(e) =>
-                          setFormData({ ...formData, position: e.target.value })
-                        }
-                        placeholder="e.g. Senior Frontend Engineer"
-                        required
-                        className="w-full rounded-xl border border-slate-200 bg-white py-3 pr-4 pl-12 text-sm text-slate-900 transition-all outline-none placeholder:text-slate-400 focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10"
-                      />
-                    </div>
+                    <label className="mb-2 block text-sm font-bold text-slate-700">Position Title *</label>
+                    <Input {...register('position')} placeholder="e.g. Senior Frontend Engineer" className="h-12" />
+                    {errors.position && <p className="mt-1 text-xs text-red-600">{errors.position.message}</p>}
                   </div>
 
-                  {/* Job URL */}
                   <div className="col-span-2">
-                    <label className="mb-2 block text-sm font-bold text-slate-700">
-                      Job URL
-                    </label>
+                    <label className="mb-2 block text-sm font-bold text-slate-700">Job URL</label>
                     <div className="relative">
                       <Globe className="absolute top-1/2 left-4 h-5 w-5 -translate-y-1/2 text-slate-400" />
-                      <input
+                      <Input
                         type="url"
-                        value={jobUrl}
-                        onChange={(e) => handleUrlChange(e.target.value)}
+                        {...register('jobUrl')}
                         placeholder="https://company.com/careers/job-id"
-                        className={`w-full rounded-xl border bg-white py-3 pr-12 pl-12 text-sm text-slate-900 transition-all outline-none placeholder:text-slate-400 ${
-                          isUrlValid === true
-                            ? 'border-green-300 focus:border-green-600 focus:ring-4 focus:ring-green-600/10'
-                            : isUrlValid === false
-                              ? 'border-red-300 focus:border-red-600 focus:ring-4 focus:ring-red-600/10'
-                              : 'border-slate-200 focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10'
-                        }`}
+                        className="h-12 pr-12 pl-12"
                       />
                       {isUrlValid === true && (
                         <CheckCircle2 className="absolute top-1/2 right-4 h-5 w-5 -translate-y-1/2 text-green-600" />
@@ -382,101 +327,55 @@ const AddJobModal: React.FC<AddJobModalProps> = ({
                         <AlertCircle className="absolute top-1/2 right-4 h-5 w-5 -translate-y-1/2 text-red-600" />
                       )}
                     </div>
-                    {isUrlValid === false && (
-                      <p className="mt-1.5 flex items-center gap-1 text-xs text-red-600">
-                        <AlertCircle className="h-3 w-3" />
-                        Please enter a valid URL
-                      </p>
-                    )}
+                    {errors.jobUrl && <p className="mt-1 text-xs text-red-600">{errors.jobUrl.message}</p>}
                   </div>
 
-                  {/* Location */}
                   <div className="col-span-2 md:col-span-1">
-                    <label className="mb-2 block text-sm font-bold text-slate-700">
-                      Location
-                    </label>
-                    <div className="relative">
-                      <MapPin className="absolute top-1/2 left-4 h-5 w-5 -translate-y-1/2 text-slate-400" />
-                      <input
-                        type="text"
-                        value={formData.location}
-                        onChange={(e) =>
-                          setFormData({ ...formData, location: e.target.value })
-                        }
-                        placeholder="e.g. BGC, Taguig / Makati"
-                        className="w-full rounded-xl border border-slate-200 bg-white py-3 pr-4 pl-12 text-sm text-slate-900 transition-all outline-none placeholder:text-slate-400 focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10"
-                      />
-                    </div>
+                    <label className="mb-2 block text-sm font-bold text-slate-700">Location</label>
+                    <Input {...register('location')} placeholder="e.g. BGC, Taguig / Makati" className="h-12" />
                   </div>
 
-                  {/* Job Type */}
                   <div className="col-span-2 md:col-span-1">
-                    <label className="mb-2 block text-sm font-bold text-slate-700">
-                      Job Type
-                    </label>
+                    <label className="mb-2 block text-sm font-bold text-slate-700">Job Type</label>
                     <Dropdown
                       options={['Full-time', 'Contract', 'Part-time', 'Internship']}
-                      value={formData.jobType}
-                      onChange={(value) => setFormData({ ...formData, jobType: value })}
+                      value={watch('jobType')}
+                      onChange={(value) => setValue('jobType', value as AddJobFormValues['jobType'], { shouldValidate: true })}
                       placeholder="Select job type"
                     />
                   </div>
 
-                  {/* Work Mode */}
                   <div className="col-span-2 md:col-span-1">
-                    <label className="mb-2 block text-sm font-bold text-slate-700">
-                      Work Mode
-                    </label>
+                    <label className="mb-2 block text-sm font-bold text-slate-700">Work Mode</label>
                     <Dropdown
                       options={['Remote', 'Hybrid', 'On-site']}
-                      value={formData.workMode}
-                      onChange={(value) => setFormData({ ...formData, workMode: value })}
+                      value={watch('workMode')}
+                      onChange={(value) => setValue('workMode', value as AddJobFormValues['workMode'], { shouldValidate: true })}
                       placeholder="Select work mode"
                     />
                   </div>
 
-                  {/* Salary Range */}
                   <div className="col-span-2 md:col-span-1">
-                    <label className="mb-2 block text-sm font-bold text-slate-700">
-                      Salary Range
-                    </label>
+                    <label className="mb-2 block text-sm font-bold text-slate-700">Salary Range</label>
                     <div className="grid grid-cols-2 gap-3">
                       <div className="relative">
                         <DollarSign className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                        <input
-                          type="number"
-                          value={formData.salaryMin}
-                          onChange={(e) =>
-                            setFormData({
-                              ...formData,
-                              salaryMin: e.target.value,
-                            })
-                          }
-                          placeholder="Min"
-                          className="w-full rounded-xl border border-slate-200 bg-white py-3 pr-3 pl-9 text-sm text-slate-900 transition-all outline-none placeholder:text-slate-400 focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10"
-                        />
+                        <Input type="number" {...register('salaryMin')} placeholder="Min" className="h-12 pl-9" />
                       </div>
                       <div className="relative">
                         <DollarSign className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                        <input
-                          type="number"
-                          value={formData.salaryMax}
-                          onChange={(e) =>
-                            setFormData({
-                              ...formData,
-                              salaryMax: e.target.value,
-                            })
-                          }
-                          placeholder="Max"
-                          className="w-full rounded-xl border border-slate-200 bg-white py-3 pr-3 pl-9 text-sm text-slate-900 transition-all outline-none placeholder:text-slate-400 focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10"
-                        />
+                        <Input type="number" {...register('salaryMax')} placeholder="Max" className="h-12 pl-9" />
                       </div>
                     </div>
+                    {(errors.salaryMin || errors.salaryMax) && (
+                      <p className="mt-1 text-xs text-red-600">
+                        {errors.salaryMin?.message || errors.salaryMax?.message}
+                      </p>
+                    )}
                   </div>
                 </div>
               </div>
 
-              {/* SECTION 2 - STATUS & DATES */}
               <div className="space-y-6">
                 <div className="flex items-center gap-3 border-b border-slate-200 pb-3">
                   <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-green-100">
@@ -486,83 +385,44 @@ const AddJobModal: React.FC<AddJobModalProps> = ({
                 </div>
 
                 <div className="grid grid-cols-2 gap-6">
-                  {/* Current Status */}
                   <div>
-                    <label className="mb-2 block text-sm font-bold text-slate-700">
-                      Current Status <span className="text-red-500">*</span>
-                    </label>
+                    <label className="mb-2 block text-sm font-bold text-slate-700">Current Status *</label>
                     <Dropdown
-                      options={[
-                        'Applied',
-                        'Phone Screen',
-                        'Technical',
-                        'Onsite',
-                        'Offer',
-                        'Rejected',
-                      ]}
-                      value={formData.status}
-                      onChange={(value) => setFormData({ ...formData, status: value })}
+                      options={['Applied', 'Phone Screen', 'Technical', 'Onsite', 'Offer', 'Rejected']}
+                      value={watch('status')}
+                      onChange={(value) => setValue('status', value as AddJobFormValues['status'], { shouldValidate: true })}
                       placeholder="Select status"
                     />
                   </div>
 
-                  {/* Applied Date */}
                   <div>
-                    <label className="mb-2 block text-sm font-bold text-slate-700">
-                      Applied Date <span className="text-red-500">*</span>
-                    </label>
-                    <div className="relative">
-                      <Calendar className="absolute top-1/2 left-4 h-5 w-5 -translate-y-1/2 text-slate-400" />
-                      <input
-                        type="date"
-                        value={formData.appliedDate}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            appliedDate: e.target.value,
-                          })
-                        }
-                        required
-                        className="w-full rounded-xl border border-slate-200 bg-white py-3 pr-4 pl-12 text-sm text-slate-900 transition-all outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10"
-                      />
-                    </div>
+                    <label className="mb-2 block text-sm font-bold text-slate-700">Applied Date *</label>
+                    <Input type="date" {...register('appliedDate')} className="h-12" />
+                    {errors.appliedDate && <p className="mt-1 text-xs text-red-600">{errors.appliedDate.message}</p>}
                   </div>
 
-                  {/* Priority */}
                   <div>
-                    <label className="mb-2 block text-sm font-bold text-slate-700">
-                      Priority
-                    </label>
+                    <label className="mb-2 block text-sm font-bold text-slate-700">Priority</label>
                     <Dropdown
                       options={['High', 'Medium', 'Low']}
-                      value={formData.priority}
-                      onChange={(value) => setFormData({ ...formData, priority: value })}
+                      value={watch('priority')}
+                      onChange={(value) => setValue('priority', value as AddJobFormValues['priority'], { shouldValidate: true })}
                       placeholder="Select priority"
                     />
                   </div>
 
-                  {/* Source */}
                   <div>
-                    <label className="mb-2 block text-sm font-bold text-slate-700">
-                      Source
-                    </label>
+                    <label className="mb-2 block text-sm font-bold text-slate-700">Source</label>
                     <Dropdown
-                      options={[
-                        'LinkedIn',
-                        'Indeed',
-                        'Company Website',
-                        'Referral',
-                        'Other',
-                      ]}
-                      value={formData.source}
-                      onChange={(value) => setFormData({ ...formData, source: value })}
+                      options={['LinkedIn', 'Indeed', 'Company Website', 'Referral', 'Other']}
+                      value={watch('source')}
+                      onChange={(value) => setValue('source', value as AddJobFormValues['source'], { shouldValidate: true })}
                       placeholder="Select source"
                     />
                   </div>
                 </div>
               </div>
 
-              {/* SECTION 3 - ADDITIONAL INFO */}
               <div className="space-y-6">
                 <div className="flex items-center gap-3 border-b border-slate-200 pb-3">
                   <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-purple-100">
@@ -571,57 +431,37 @@ const AddJobModal: React.FC<AddJobModalProps> = ({
                   <h3 className="font-semibold text-slate-900">Additional Information</h3>
                 </div>
 
-                {/* Job Description */}
                 <div>
-                  <label className="mb-2 block text-sm font-bold text-slate-700">
-                    Job Description
-                  </label>
+                  <label className="mb-2 block text-sm font-bold text-slate-700">Job Description</label>
                   <textarea
-                    value={formData.jobDescription}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        jobDescription: e.target.value,
-                      })
-                    }
+                    {...register('jobDescription')}
                     rows={6}
                     placeholder="Paste the full job description here..."
-                    className="w-full resize-y rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 transition-all outline-none placeholder:text-slate-400 focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10"
+                    className="w-full resize-y rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10"
                   />
                 </div>
 
-                {/* Requirements */}
                 <div>
-                  <label className="mb-2 block text-sm font-bold text-slate-700">
-                    Key Requirements
-                  </label>
+                  <label className="mb-2 block text-sm font-bold text-slate-700">Key Requirements</label>
                   <textarea
-                    value={formData.requirements}
-                    onChange={(e) =>
-                      setFormData({ ...formData, requirements: e.target.value })
-                    }
+                    {...register('requirements')}
                     rows={4}
                     placeholder="• List key requirements&#10;• Technical skills needed&#10;• Years of experience"
-                    className="w-full resize-y rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 transition-all outline-none placeholder:text-slate-400 focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10"
+                    className="w-full resize-y rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10"
                   />
                 </div>
 
-                {/* Application Notes */}
                 <div>
-                  <label className="mb-2 block text-sm font-bold text-slate-700">
-                    Application Notes
-                  </label>
+                  <label className="mb-2 block text-sm font-bold text-slate-700">Application Notes</label>
                   <textarea
-                    value={formData.notes}
-                    onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                    {...register('notes')}
                     rows={3}
                     placeholder="Add any notes about this application, interview prep, or follow-up tasks..."
-                    className="w-full resize-y rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 transition-all outline-none placeholder:text-slate-400 focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10"
+                    className="w-full resize-y rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10"
                   />
                 </div>
               </div>
 
-              {/* SECTION 4 - CONTACT INFO */}
               <div className="space-y-6">
                 <div className="flex items-center gap-3 border-b border-slate-200 pb-3">
                   <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-orange-100">
@@ -632,96 +472,59 @@ const AddJobModal: React.FC<AddJobModalProps> = ({
                 </div>
 
                 <div className="grid grid-cols-2 gap-6">
-                  {/* Recruiter Name */}
                   <div className="col-span-2 md:col-span-1">
-                    <label className="mb-2 block text-sm font-bold text-slate-700">
-                      Recruiter Name
-                    </label>
-                    <div className="relative">
-                      <User className="absolute top-1/2 left-4 h-5 w-5 -translate-y-1/2 text-slate-400" />
-                      <input
-                        type="text"
-                        value={formData.recruiterName}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            recruiterName: e.target.value,
-                          })
-                        }
-                        placeholder="e.g. Juan Dela Cruz"
-                        className="w-full rounded-xl border border-slate-200 bg-white py-3 pr-4 pl-12 text-sm text-slate-900 transition-all outline-none placeholder:text-slate-400 focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10"
-                      />
-                    </div>
+                    <label className="mb-2 block text-sm font-bold text-slate-700">Recruiter Name</label>
+                    <Input {...register('recruiterName')} placeholder="e.g. Juan Dela Cruz" className="h-12" />
                   </div>
 
-                  {/* Recruiter Email */}
                   <div className="col-span-2 md:col-span-1">
-                    <label className="mb-2 block text-sm font-bold text-slate-700">
-                      Recruiter Email
-                    </label>
-                    <div className="relative">
-                      <Mail className="absolute top-1/2 left-4 h-5 w-5 -translate-y-1/2 text-slate-400" />
-                      <input
-                        type="email"
-                        value={formData.recruiterEmail}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            recruiterEmail: e.target.value,
-                          })
-                        }
-                        placeholder="maria@company.ph"
-                        className="w-full rounded-xl border border-slate-200 bg-white py-3 pr-4 pl-12 text-sm text-slate-900 transition-all outline-none placeholder:text-slate-400 focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10"
-                      />
-                    </div>
+                    <label className="mb-2 block text-sm font-bold text-slate-700">Recruiter Email</label>
+                    <Input type="email" {...register('recruiterEmail')} placeholder="maria@company.ph" className="h-12" />
+                    {errors.recruiterEmail && <p className="mt-1 text-xs text-red-600">{errors.recruiterEmail.message}</p>}
                   </div>
 
-                  {/* Recruiter Phone */}
                   <div className="col-span-2 md:col-span-1">
-                    <label className="mb-2 block text-sm font-bold text-slate-700">
-                      Recruiter Phone
-                    </label>
-                    <div className="relative">
-                      <Phone className="absolute top-1/2 left-4 h-5 w-5 -translate-y-1/2 text-slate-400" />
-                      <input
-                        type="tel"
-                        value={formData.recruiterPhone}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            recruiterPhone: e.target.value,
-                          })
-                        }
-                        placeholder="+63 917 123 4567"
-                        className="w-full rounded-xl border border-slate-200 bg-white py-3 pr-4 pl-12 text-sm text-slate-900 transition-all outline-none placeholder:text-slate-400 focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10"
-                      />
-                    </div>
+                    <label className="mb-2 block text-sm font-bold text-slate-700">Recruiter Phone</label>
+                    <Input type="tel" {...register('recruiterPhone')} placeholder="+63 917 123 4567" className="h-12" />
                   </div>
                 </div>
               </div>
-            </form>
+              </form>
+            </Form>
           </div>
 
-          {/* Footer - Sticky */}
           <div className="sticky bottom-0 flex items-center justify-between border-t border-slate-200 bg-slate-50 px-6 py-4">
             <p className="text-xs text-slate-500">
               <span className="text-red-500">*</span> Required fields
             </p>
             <div className="flex gap-3">
-              <button
+              <Button
                 type="button"
-                onClick={onClose}
-                className="rounded-xl border border-slate-200 px-6 py-2.5 text-sm font-medium text-slate-600 transition-all hover:bg-white"
+                variant="outline"
+                onClick={() => {
+                  reset(addJobDefaultValues)
+                  setCompanyLogo(null)
+                  setLogoFile(null)
+                  setIsDraggingLogo(false)
+                  setIsAiProcessing(false)
+                  toast.success('Form reset.')
+                }}
               >
+                Reset
+              </Button>
+              <Button type="button" variant="outline" onClick={onClose}>
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button
                 type="submit"
-                onClick={handleSubmit}
-                className="rounded-xl bg-blue-600 px-6 py-2.5 text-sm font-medium text-white shadow-lg shadow-blue-600/20 transition-all hover:bg-blue-700"
+                form="add-job-form"
+                disabled={isSubmitting || saveJobMutation.isPending || !isValid}
               >
+                {(isSubmitting || saveJobMutation.isPending) && (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                )}
                 {editMode ? 'Save Changes' : 'Save Application'}
-              </button>
+              </Button>
             </div>
           </div>
         </motion.div>
