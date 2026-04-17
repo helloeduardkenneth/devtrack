@@ -6,7 +6,7 @@ import SignUpPage from '../SignUpPage'
 
 const mutateMock = vi.fn()
 
-vi.mock('@/queries/signup.mutation', () => ({
+vi.mock('@/queries/auth/signup.mutation', () => ({
   useSignUpMutation: () => ({
     mutate: mutateMock,
     isPending: false,

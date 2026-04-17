@@ -1,61 +1,84 @@
 import { z } from 'zod'
 
-export const jobSchema = z
+const optionalStringField = z.string().trim().optional()
+
+const optionalNumberField = z.number().int().nonnegative().optional()
+
+export const AddJobSchema = z
   .object({
     company: z.string('Company is required').trim().min(2, 'Company is required'),
+
     position: z.string('Position is required').trim().min(2, 'Position is required'),
+
     jobUrl: z
       .string()
       .trim()
       .optional()
       .or(z.literal(''))
-      .refine((val) => !val || z.url().safeParse(val).success, {
+      .refine((value) => !value || z.url().safeParse(value).success, {
         message: 'Please enter a valid URL',
       }),
-    location: z.string().trim().optional(),
+
+    location: optionalStringField,
+
+    companyLogoUrl: optionalStringField,
+
+    companyLogoFilename: optionalStringField,
+
     jobType: z.enum(['Full-time', 'Contract', 'Part-time', 'Internship']),
+
     workMode: z.enum(['Remote', 'Hybrid', 'On-site']),
-    salaryMin: z.string().trim().optional(),
-    salaryMax: z.string().trim().optional(),
-    status: z.enum(['Applied', 'Phone Screen', 'Technical', 'Onsite', 'Offer', 'Rejected']),
+
+    salaryMin: optionalNumberField,
+
+    salaryMax: optionalNumberField,
+
+    status: z.enum([
+      'Applied',
+      'Phone Screen',
+      'Technical',
+      'Onsite',
+      'Offer',
+      'Rejected',
+    ]),
+
     appliedDate: z.string('Applied date is required').min(1, 'Applied date is required'),
+
     priority: z.enum(['High', 'Medium', 'Low']),
-    source: z.enum(['LinkedIn', 'Indeed', 'Company Website', 'Referral', 'Other']),
-    jobDescription: z.string().trim().optional(),
-    requirements: z.string().trim().optional(),
-    notes: z.string().trim().optional(),
-    recruiterName: z.string().trim().optional(),
+
+    source: z.enum([
+      'LinkedIn',
+      'Indeed',
+      'Jobstreet',
+      'Company Website',
+      'Referral',
+      'Other',
+    ]),
+
+    jobDescription: optionalStringField,
+
+    requirements: optionalStringField,
+
+    notes: optionalStringField,
+
+    recruiterName: optionalStringField,
+
     recruiterEmail: z
       .string()
       .trim()
       .optional()
       .or(z.literal(''))
-      .refine((val) => !val || z.email().safeParse(val).success, {
+      .refine((value) => !value || z.email().safeParse(value).success, {
         message: 'Please enter a valid email',
       }),
-    recruiterPhone: z.string().trim().optional(),
+
+    recruiterPhone: optionalStringField,
   })
   .superRefine((data, ctx) => {
-    const min = data.salaryMin ? Number(data.salaryMin) : null
-    const max = data.salaryMax ? Number(data.salaryMax) : null
+    const min = data.salaryMin
+    const max = data.salaryMax
 
-    if (data.salaryMin && Number.isNaN(min)) {
-      ctx.addIssue({
-        code: 'custom',
-        path: ['salaryMin'],
-        message: 'Minimum salary must be a valid number',
-      })
-    }
-
-    if (data.salaryMax && Number.isNaN(max)) {
-      ctx.addIssue({
-        code: 'custom',
-        path: ['salaryMax'],
-        message: 'Maximum salary must be a valid number',
-      })
-    }
-
-    if (min !== null && max !== null && !Number.isNaN(min) && !Number.isNaN(max) && min > max) {
+    if (min !== undefined && max !== undefined && min > max) {
       ctx.addIssue({
         code: 'custom',
         path: ['salaryMax'],
@@ -64,25 +87,6 @@ export const jobSchema = z
     }
   })
 
-export type AddJobFormValues = z.infer<typeof jobSchema>
+export type AddJobFormValues = z.infer<typeof AddJobSchema>
 
-export const addJobDefaultValues: AddJobFormValues = {
-  company: '',
-  position: '',
-  jobUrl: '',
-  location: '',
-  jobType: 'Full-time',
-  workMode: 'Remote',
-  salaryMin: '',
-  salaryMax: '',
-  status: 'Applied',
-  appliedDate: new Date().toISOString().split('T')[0],
-  priority: 'Medium',
-  source: 'LinkedIn',
-  jobDescription: '',
-  requirements: '',
-  notes: '',
-  recruiterName: '',
-  recruiterEmail: '',
-  recruiterPhone: '',
-}
+export type AddJobPayload = AddJobFormValues

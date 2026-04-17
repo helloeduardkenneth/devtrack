@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 
 import { getUserProfileApi } from '@/api/auth.api'
-import { queryKeys } from './queryKeys'
+import { queryKeys } from '@/queries/queryKeys'
 
 export interface IUserProfile {
   id: number

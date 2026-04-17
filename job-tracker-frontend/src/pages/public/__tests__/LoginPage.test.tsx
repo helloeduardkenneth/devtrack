@@ -6,7 +6,7 @@ import LoginPage from '../LoginPage'
 
 const mutateMock = vi.fn()
 
-vi.mock('@/queries/signin.mutation', () => ({
+vi.mock('@/queries/auth/signin.mutation', () => ({
   useSignInMutation: () => ({
     mutate: mutateMock,
     isPending: false,

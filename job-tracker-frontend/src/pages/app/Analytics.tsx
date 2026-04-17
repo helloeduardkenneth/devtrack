@@ -29,7 +29,13 @@ import {
   RadialBarChart,
   RadialBar,
 } from 'recharts'
-import { Dropdown } from '@/components/shared/Dropdown'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { motion } from 'motion/react'
 
 // Mock data for charts
@@ -342,12 +348,17 @@ export const Analytics: React.FC<AnalyticsDashboardProps> = () => {
           {/* Date Range Selector */}
           <div className="flex items-center gap-2">
             <Calendar className="h-5 w-5 text-slate-400" />
-            <Dropdown
-              options={['Last 7 days', 'Last 30 days', 'Last 3 months', 'Custom']}
-              value={dateRange}
-              onChange={setDateRange}
-              placeholder="Select range"
-            />
+            <Select value={dateRange} onValueChange={setDateRange}>
+              <SelectTrigger className="h-[42px] min-w-[160px] rounded-xl border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700">
+                <SelectValue placeholder="Select range" />
+              </SelectTrigger>
+              <SelectContent className="rounded-xl border-slate-200">
+                <SelectItem value="Last 7 days">Last 7 days</SelectItem>
+                <SelectItem value="Last 30 days">Last 30 days</SelectItem>
+                <SelectItem value="Last 3 months">Last 3 months</SelectItem>
+                <SelectItem value="Custom">Custom</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           {/* Export Button */}

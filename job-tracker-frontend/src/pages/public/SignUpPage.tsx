@@ -17,7 +17,7 @@ import {
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
 import { getPasswordStrength } from '@/helpers/password'
-import { useSignUpMutation } from '@/queries/signup.mutation'
+import { useSignUpMutation } from '@/queries/auth/signup.mutation'
 import { signUpSchema, type SignUpFormValues } from '@/validations/auth.validation'
 
 interface SignUpProps {

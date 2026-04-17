@@ -82,13 +82,13 @@ export const getUserProfile = async (req: Request, res: Response) => {
       return res.status(404).json({ error: "User not found" });
     }
 
-    return res.status(201).json({
+    return res.status(200).json({
       user_id: user.id,
       email: user.email,
       full_name: user.full_name,
       current_job: user.current_job,
     });
   } catch (error) {
-    return res.status(401).json({ error: "Unautorized" });
+    return res.status(401).json({ error: "Unauthorized" });
   }
 };
