@@ -8,11 +8,82 @@ datasource db {
 }
 
 model User {
-  id          Int     @id @default(autoincrement())
-  email       String  @unique
-  full_name   String?
-  current_job String  @default("Unemployed")
-  password    String
+  id           Int           @id @default(autoincrement())
+  email        String        @unique
+  full_name    String?
+  current_job  String        @default("Unemployed")
+  password     String
+  applications Application[]
+}
+
+model Application {
+  id                   Int               @id @default(autoincrement())
+  user_id              Int
+  company              String
+  company_logo_url     String?
+  company_logo_filename String?
+  position             String
+  job_url          String?
+  location         String?
+  job_type         ApplicationJobType @default(FULL_TIME)
+  work_mode        ApplicationWorkMode @default(REMOTE)
+  salary_min       Int?
+  salary_max       Int?
+  status           ApplicationStatus @default(APPLIED)
+  applied_date     DateTime
+  priority         ApplicationPriority @default(MEDIUM)
+  source           ApplicationSource @default(LINKEDIN)
+  job_description  String?
+  requirements     String?
+  notes            String?
+  recruiter_name   String?
+  recruiter_email  String?
+  recruiter_phone  String?
+  created_at       DateTime          @default(now())
+  updated_at       DateTime          @updatedAt
+
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id])
+  @@index([status])
+  @@index([applied_date])
+}
+
+enum ApplicationJobType {
+  FULL_TIME
+  CONTRACT
+  PART_TIME
+  INTERNSHIP
+}
+
+enum ApplicationWorkMode {
+  REMOTE
+  HYBRID
+  ON_SITE
+}
+
+enum ApplicationStatus {
+  APPLIED
+  PHONE_SCREEN
+  TECHNICAL
+  ONSITE
+  OFFER
+  REJECTED
+}
+
+enum ApplicationPriority {
+  HIGH
+  MEDIUM
+  LOW
+}
+
+enum ApplicationSource {
+  LINKEDIN
+  INDEED
+  JOBSTREET
+  COMPANY_WEBSITE
+  REFERRAL
+  OTHER
 }
 
 

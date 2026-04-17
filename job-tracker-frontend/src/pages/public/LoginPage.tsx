@@ -18,7 +18,7 @@ import {
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
 import { useAuth } from '@/contexts/AuthContext'
-import { useSignInMutation } from '@/queries/signin.mutation'
+import { useSignInMutation } from '@/queries/auth/signin.mutation'
 import { signInSchema, type SignInFormValues } from '@/validations/auth.validation'
 
 interface LoginProps {

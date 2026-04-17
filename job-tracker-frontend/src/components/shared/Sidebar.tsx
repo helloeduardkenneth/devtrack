@@ -12,7 +12,7 @@ import { motion } from 'motion/react'
 import { useNavigate } from 'react-router-dom'
 
 import { useAuth } from '@/contexts/AuthContext'
-import { useGetUserProfile } from '@/queries/profile.queries'
+import { useGetUserProfile } from '@/queries/auth/profile.queries'
 
 interface SidebarProps {
   activeTab: string

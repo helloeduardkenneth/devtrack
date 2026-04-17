@@ -3,7 +3,7 @@ import axios from 'axios'
 import { toast } from 'sonner'
 
 import { signInApi } from '@/api/auth.api'
-import { queryKeys } from './queryKeys'
+import { queryKeys } from '@/queries/queryKeys'
 import type { SignInFormValues, SignInPayload } from '@/validations/auth.validation'
 
 const toPayload = (values: SignInFormValues): SignInPayload => {

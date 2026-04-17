@@ -1,6 +1,6 @@
 import { useMutation } from '@tanstack/react-query'
 import { signUpApi } from '@/api/auth.api'
-import { queryKeys } from './queryKeys'
+import { queryKeys } from '@/queries/queryKeys'
 import type { SignUpFormValues, SignUpPayload } from '@/validations/auth.validation'
 import { toast } from 'sonner'
 import axios from 'axios'

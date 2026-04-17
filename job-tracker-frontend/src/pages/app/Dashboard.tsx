@@ -1,4 +1,10 @@
-﻿import { Dropdown } from '@/components/shared/Dropdown'
+﻿import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import {
   Briefcase,
   Building2,
@@ -342,11 +348,15 @@ export const Dashboard = () => {
         <div className="flex h-full flex-col rounded-2xl border border-slate-200 bg-white p-5 lg:col-span-2">
           <div className="mb-4 flex items-center justify-between">
             <h3 className="text-lg font-semibold text-slate-900">Application Activity</h3>
-            <Dropdown
-              options={['Last 7 days', 'Last 30 days']}
-              value={timeRange}
-              onChange={setTimeRange}
-            />
+            <Select value={timeRange} onValueChange={setTimeRange}>
+              <SelectTrigger className="h-[42px] min-w-[140px] rounded-xl border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700">
+                <SelectValue placeholder="Select range" />
+              </SelectTrigger>
+              <SelectContent className="rounded-xl border-slate-200">
+                <SelectItem value="Last 7 days">Last 7 days</SelectItem>
+                <SelectItem value="Last 30 days">Last 30 days</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
           <div className="h-52 flex-1">
             <ResponsiveContainer width="100%" height="100%">
