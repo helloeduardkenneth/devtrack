@@ -75,3 +75,12 @@ export const CreateApplicationSchema = withSalaryValidation(createBaseApplicatio
 export const UpdateApplicationSchema = withSalaryValidation(
   createBaseApplicationSchema().partial(),
 );
+
+export const BulkUpdateStatusSchema = z.object({
+  ids: z.array(z.number().int().positive()).min(1, "At least one ID is required"),
+  status: StatusEnum,
+});
+
+export const BulkDeleteSchema = z.object({
+  ids: z.array(z.number().int().positive()).min(1, "At least one ID is required"),
+});

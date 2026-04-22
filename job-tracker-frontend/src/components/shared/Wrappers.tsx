@@ -6,74 +6,74 @@ import { ForgotPassword } from '@/pages/public/ForgotPassword'
 import SignUpPage from '@/pages/public/SignUpPage'
 
 export function LandingPageWrapper() {
-  const navigate = useNavigate()
+    const navigate = useNavigate()
 
-  const handleStart = () => {
-    navigate('/signup')
-  }
+    const handleStart = () => {
+        navigate('/signup')
+    }
 
-  return <LandingPage onStart={handleStart} />
+    return <LandingPage onStart={handleStart} />
 }
 
 export function LoginPageWrapper() {
-  const navigate = useNavigate()
+    const navigate = useNavigate()
 
-  const handleLogin = () => {
-    navigate('/dashboard')
-  }
+    const handleLogin = () => {
+        navigate('/dashboard')
+    }
 
-  const handleBackToLanding = () => {
-    navigate('/')
-  }
+    const handleBackToLanding = () => {
+        navigate('/')
+    }
 
-  const handleSwitchToSignUp = () => {
-    navigate('/signup')
-  }
+    const handleSwitchToSignUp = () => {
+        navigate('/signup')
+    }
 
-  const handleForgotPassword = () => {
-    navigate('/forgot-password')
-  }
+    const handleForgotPassword = () => {
+        navigate('/forgot-password')
+    }
 
-  return (
-    <LoginPage
-      onLogin={handleLogin}
-      onBackToLanding={handleBackToLanding}
-      onSwitchToSignUp={handleSwitchToSignUp}
-      onForgotPassword={handleForgotPassword}
-    />
-  )
+    return (
+        <LoginPage
+            onLogin={handleLogin}
+            onBackToLanding={handleBackToLanding}
+            onSwitchToSignUp={handleSwitchToSignUp}
+            onForgotPassword={handleForgotPassword}
+        />
+    )
 }
 
 export function ForgotPasswordWrapper() {
-  const navigate = useNavigate()
+    const navigate = useNavigate()
 
-  const handleBackToLogin = () => {
-    navigate('/login')
-  }
+    const handleBackToLogin = () => {
+        navigate('/login')
+    }
 
-  return <ForgotPassword onBackToLogin={handleBackToLogin} />
+    return <ForgotPassword onBackToLogin={handleBackToLogin} />
 }
 
 export function SignUpPageWrapper() {
-  const navigate = useNavigate()
+    const navigate = useNavigate()
 
-  const handleSignUp = () => {
-    navigate('/dashboard')
-  }
+    const handleSignUp = () => {
+        navigate('/dashboard')
+    }
 
-  const handleBackToLanding = () => {
-    navigate('/')
-  }
+    const handleBackToLanding = () => {
+        navigate('/')
+    }
 
-  const handleSwitchToLogin = () => {
-    navigate('/login')
-  }
+    const handleSwitchToLogin = () => {
+        navigate('/login')
+    }
 
-  return (
-    <SignUpPage
-      onSignUp={handleSignUp}
-      onBackToLanding={handleBackToLanding}
-      onSwitchToLogin={handleSwitchToLogin}
-    />
-  )
+    return (
+        <SignUpPage
+            onSignUp={handleSignUp}
+            onBackToLanding={handleBackToLanding}
+            onSwitchToLogin={handleSwitchToLogin}
+        />
+    )
 }

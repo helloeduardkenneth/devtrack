@@ -2,6 +2,8 @@ import type { Request, Response } from "express";
 
 import { verifyToken, type ITokenPayload } from "../../shared/helpers/jwt";
 import {
+  bulkDelete as bulkDeleteService,
+  bulkUpdateStatus as bulkUpdateStatusService,
   createApplication as createApplicationService,
   deleteApplicationById as deleteApplicationByIdService,
   getApplicationById as getApplicationByIdService,
@@ -9,10 +11,14 @@ import {
   updateApplicationById as updateApplicationByIdService,
 } from "./application.service";
 import type {
+  IBulkDeleteRequestBody,
+  IBulkUpdateStatusRequestBody,
   ICreateApplicationRequestBody,
   IUpdateApplicationRequestBody,
 } from "./application.types";
 import {
+  BulkDeleteSchema,
+  BulkUpdateStatusSchema,
   CreateApplicationSchema,
   UpdateApplicationSchema,
 } from "./application.validation";
@@ -138,6 +144,70 @@ export const deleteApplicationById = async (
     return res.status(200).json({ message: "Application deleted successfully." });
   } catch (error) {
     console.error("Delete application error:", error);
+    return res.status(500).json({ error: "Internal server error." });
+  }
+};
+
+export const bulkUpdateStatus = async (
+  req: Request<{}, {}, IBulkUpdateStatusRequestBody>,
+  res: Response,
+) => {
+  try {
+    const userId = getUserIdFromRequest(req);
+    if (!userId) return res.status(401).json({ error: "Unauthorized." });
+
+    const validation = BulkUpdateStatusSchema.safeParse(req.body);
+    if (!validation.success) {
+      return res.status(400).json({
+        error: "Validation failed.",
+        details: validation.error.issues,
+      });
+    }
+
+    const { ids, status } = validation.data;
+    const updatedCount = await bulkUpdateStatusService(userId, ids, status);
+
+    return res.status(200).json({
+      message: `${updatedCount} application(s) updated successfully.`,
+      updatedCount,
+    });
+  } catch (error) {
+    console.error("Bulk update status error:", error);
+    return res.status(500).json({ error: "Internal server error." });
+  }
+};
+
+export const bulkDelete = async (
+  req: Request<{}, {}, IBulkDeleteRequestBody>,
+  res: Response,
+) => {
+  try {
+    const userId = getUserIdFromRequest(req);
+    if (!userId) return res.status(401).json({ error: "Unauthorized." });
+
+    const validation = BulkDeleteSchema.safeParse(req.body);
+    if (!validation.success) {
+      return res.status(400).json({
+        error: "Validation failed.",
+        details: validation.error.issues,
+      });
+    }
+
+    const { ids } = validation.data;
+
+    // Validate that all IDs are valid numbers
+    if (ids.some(id => typeof id !== 'number' || isNaN(id) || id <= 0)) {
+      return res.status(400).json({ error: "Invalid application ID(s) provided." });
+    }
+
+    const deletedCount = await bulkDeleteService(userId, ids);
+
+    return res.status(200).json({
+      message: `${deletedCount} application(s) deleted successfully.`,
+      deletedCount,
+    });
+  } catch (error) {
+    console.error("Bulk delete error:", error);
     return res.status(500).json({ error: "Internal server error." });
   }
 };

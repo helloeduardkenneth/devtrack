@@ -1,5 +1,7 @@
 import { Router } from "express";
 import {
+  bulkDelete,
+  bulkUpdateStatus,
   createApplication,
   deleteApplicationById,
   getApplicationById,
@@ -218,5 +220,75 @@ router.patch("/:id", updateApplicationById);
  *         description: Application not found
  */
 router.delete("/:id", deleteApplicationById);
+
+/**
+ * @openapi
+ * /applications/bulk/status:
+ *   patch:
+ *     tags:
+ *       - Applications
+ *     summary: Update status for multiple applications
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - ids
+ *               - status
+ *             properties:
+ *               ids:
+ *                 type: array
+ *                 items:
+ *                   type: integer
+ *                 description: Array of application IDs to update
+ *               status:
+ *                 type: string
+ *                 enum: [Applied, Phone Screen, Technical, Onsite, Offer, Rejected]
+ *     responses:
+ *       200:
+ *         description: Applications updated successfully
+ *       400:
+ *         description: Validation failed
+ *       401:
+ *         description: Unauthorized
+ */
+router.patch("/bulk/status", bulkUpdateStatus);
+
+/**
+ * @openapi
+ * /applications/bulk/delete:
+ *   post:
+ *     tags:
+ *       - Applications
+ *     summary: Delete multiple applications
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - ids
+ *             properties:
+ *               ids:
+ *                 type: array
+ *                 items:
+ *                   type: integer
+ *                 description: Array of application IDs to delete
+ *     responses:
+ *       200:
+ *         description: Applications deleted successfully
+ *       400:
+ *         description: Validation failed
+ *       401:
+ *         description: Unauthorized
+ */
+router.post("/bulk/delete", bulkDelete);
 
 export default router;

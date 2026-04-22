@@ -1,21 +1,38 @@
-import AddJobModal from '@/components/modals/AddJobModal'
-import DeleteConfirmationModal from '@/components/modals/DeleteConfirmationModal'
-import ViewApplicationModal from '@/components/modals/ViewApplicationModal'
-import { DataPagination } from '@/components/shared/DataPagination'
+import { useState } from 'react'
+
 import { useApplicationsPage } from '@/hooks/useApplicationsPage'
+
+import {
+    useBulkDeleteMutation,
+    useBulkUpdateStatusMutation,
+    useDeleteApplicationMutation,
+} from '@/queries/applications/applications.mutation'
+
+import {
+    useGetListApplications,
+    type IApplicationItem,
+} from '@/queries/applications/applications.queries'
+
+import type { EditableApplication } from '@/pages/app/applications/applications.types'
+
 import { ApplicationsBulkActions } from '@/pages/app/applications/ApplicationsBulkActions'
 import { ApplicationsFilters } from '@/pages/app/applications/ApplicationsFilters'
 import { ApplicationsHeader } from '@/pages/app/applications/ApplicationsHeader'
 import { ApplicationsTable } from '@/pages/app/applications/ApplicationsTable'
 import { mapApplicationToRecord } from '@/pages/app/applications/applications.mappers'
-import type { EditableApplication } from '@/pages/app/applications/applications.types'
-import { useDeleteApplicationMutation } from '@/queries/applications/applications.mutation'
-import {
-    useGetListApplications,
-    type IApplicationItem,
-} from '@/queries/applications/applications.queries'
+
+import AddJobModal from '@/components/modals/AddJobModal'
+import ChangeStatusModal from '@/components/modals/ChangeStatusModal'
+import DeleteConfirmationModal from '@/components/modals/DeleteConfirmationModal'
+import ViewApplicationModal from '@/components/modals/ViewApplicationModal'
+
+import { DataPagination } from '@/components/shared/DataPagination'
+
 import { Building2, Plus } from 'lucide-react'
-import { useState } from 'react'
+import { toast } from 'sonner'
+
+import { exportApplicationsToExcel } from '@/utils/export.utils'
+
 import {
     mapJobTypeToForm,
     mapPriorityToForm,
@@ -38,6 +55,11 @@ const Applications = () => {
     const [isViewModalOpen, setIsViewModalOpen] = useState(false)
     const [applicationToView, setApplicationToView] =
         useState<IApplicationItem | null>(null)
+
+    // Bulk action modals state
+    const [isChangeStatusModalOpen, setIsChangeStatusModalOpen] =
+        useState(false)
+    const [isBulkDeleteModalOpen, setIsBulkDeleteModalOpen] = useState(false)
 
     const {
         data: applicationsData = [],
@@ -119,6 +141,16 @@ const Applications = () => {
         setApplicationToDelete(null)
     })
 
+    const bulkUpdateStatusMutation = useBulkUpdateStatusMutation(() => {
+        setIsChangeStatusModalOpen(false)
+        setSelectedItems([])
+    })
+
+    const bulkDeleteMutation = useBulkDeleteMutation(() => {
+        setIsBulkDeleteModalOpen(false)
+        setSelectedItems([])
+    })
+
     const handleDeleteById = (id: string) => {
         const target = applications.find((app) => app.id === id)
         if (!target) return
@@ -142,6 +174,54 @@ const Applications = () => {
 
         setApplicationToView(target)
         setIsViewModalOpen(true)
+    }
+
+    // Bulk action handlers
+    const handleExportSelected = async () => {
+        const selectedApplications = applications.filter((app) =>
+            selectedItems.includes(app.id),
+        )
+        if (selectedApplications.length > 0) {
+            try {
+                await exportApplicationsToExcel(
+                    selectedApplications,
+                    'applications',
+                )
+            } catch (error) {
+                console.error('Failed to export applications:', error)
+                toast.error('Failed to export applications. Please try again.')
+            }
+        }
+    }
+
+    const handleChangeStatus = () => {
+        if (selectedItems.length > 0) {
+            setIsChangeStatusModalOpen(true)
+        }
+    }
+
+    const handleConfirmChangeStatus = (status: string) => {
+        const ids = selectedItems.map((id) => Number(id))
+        bulkUpdateStatusMutation.mutate({ ids, status })
+    }
+
+    const handleBulkDelete = () => {
+        if (selectedItems.length > 0) {
+            setIsBulkDeleteModalOpen(true)
+        }
+    }
+
+    const handleConfirmBulkDelete = () => {
+        const ids = selectedItems
+            .map((id) => Number(id))
+            .filter((id) => !isNaN(id) && id > 0)
+
+        if (ids.length === 0) {
+            toast.error('No valid application IDs selected for deletion.')
+            return
+        }
+
+        bulkDeleteMutation.mutate(ids)
     }
 
     if (isLoading) {
@@ -271,6 +351,9 @@ const Applications = () => {
             <ApplicationsBulkActions
                 selectedCount={selectedItems.length}
                 onClearSelection={() => setSelectedItems([])}
+                onExport={handleExportSelected}
+                onChangeStatus={handleChangeStatus}
+                onDelete={handleBulkDelete}
             />
 
             <ApplicationsTable
@@ -326,6 +409,22 @@ const Applications = () => {
                     setApplicationToView(null)
                 }}
                 application={applicationToView}
+            />
+
+            <ChangeStatusModal
+                isOpen={isChangeStatusModalOpen}
+                onClose={() => setIsChangeStatusModalOpen(false)}
+                onConfirm={handleConfirmChangeStatus}
+                isUpdating={bulkUpdateStatusMutation.isPending}
+                selectedCount={selectedItems.length}
+            />
+
+            <DeleteConfirmationModal
+                isOpen={isBulkDeleteModalOpen}
+                onClose={() => setIsBulkDeleteModalOpen(false)}
+                onConfirm={handleConfirmBulkDelete}
+                isDeleting={bulkDeleteMutation.isPending}
+                selectedCount={selectedItems.length}
             />
         </div>
     )

@@ -42,3 +42,12 @@ export interface ICreateApplicationRequestBody {
 export type IUpdateApplicationRequestBody = {
   [K in keyof ICreateApplicationRequestBody]?: ICreateApplicationRequestBody[K] | undefined;
 };
+
+export interface IBulkUpdateStatusRequestBody {
+  ids: number[];
+  status: ApplicationStatus;
+}
+
+export interface IBulkDeleteRequestBody {
+  ids: number[];
+}

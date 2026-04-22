@@ -4,11 +4,11 @@ import { AuthProvider } from '@/contexts/AuthContext'
 import { router } from '@/routes'
 
 const App = () => {
-  return (
-    <AuthProvider>
-      <RouterProvider router={router} />
-    </AuthProvider>
-  )
+    return (
+        <AuthProvider>
+            <RouterProvider router={router} />
+        </AuthProvider>
+    )
 }
 
 export default App
