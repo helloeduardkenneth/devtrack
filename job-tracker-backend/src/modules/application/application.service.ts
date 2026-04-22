@@ -145,3 +145,44 @@ export const deleteApplicationById = async (userId: number, applicationId: numbe
   await prisma.application.delete({ where: { id: applicationId } });
   return true;
 };
+
+export const bulkUpdateStatus = async (userId: number, ids: number[], status: ApplicationStatus) => {
+  const dbStatus = statusMap[status];
+
+  // Only update applications that belong to the user
+  const result = await prisma.application.updateMany({
+    where: {
+      id: { in: ids },
+      user_id: userId,
+    },
+    data: {
+      status: dbStatus,
+    },
+  });
+
+  return result.count;
+};
+
+export const bulkDelete = async (userId: number, ids: number[]) => {
+  // Validate input
+  if (!ids || ids.length === 0) {
+    return 0;
+  }
+
+  // Filter out any invalid IDs
+  const validIds = ids.filter(id => typeof id === 'number' && !isNaN(id) && id > 0);
+
+  if (validIds.length === 0) {
+    return 0;
+  }
+
+  // Only delete applications that belong to the user
+  const result = await prisma.application.deleteMany({
+    where: {
+      id: { in: validIds },
+      user_id: userId,
+    },
+  });
+
+  return result.count;
+};
