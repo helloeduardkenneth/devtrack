@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Outlet, useLocation, useNavigate } from 'react-router-dom'
 
 import AddJobModal from '@/components/modals/AddJobModal'
+import DesktopOnly from '@/components/shared/DesktopOnly'
 import Header from '@/components/shared/Header'
 import Sidebar from '@/components/shared/Sidebar'
 
@@ -75,19 +76,21 @@ const AppLayout = () => {
     }
 
     return (
-        <div className="min-h-screen bg-slate-50">
-            <Sidebar activeTab={activeTab} setActiveTab={handleTabChange} />
-            <div className="ml-64">
-                <Header onAddJob={handleAddJob} />
-                <main className="p-4 sm:p-8">
-                    <Outlet />
-                </main>
+        <DesktopOnly>
+            <div className="min-h-screen bg-slate-50">
+                <Sidebar activeTab={activeTab} setActiveTab={handleTabChange} />
+                <div className="ml-64">
+                    <Header onAddJob={handleAddJob} />
+                    <main className="p-4 sm:p-8">
+                        <Outlet />
+                    </main>
+                </div>
+                <AddJobModal
+                    isOpen={isAddJobModalOpen}
+                    onClose={() => setIsAddJobModalOpen(false)}
+                />
             </div>
-            <AddJobModal
-                isOpen={isAddJobModalOpen}
-                onClose={() => setIsAddJobModalOpen(false)}
-            />
-        </div>
+        </DesktopOnly>
     )
 }
 
