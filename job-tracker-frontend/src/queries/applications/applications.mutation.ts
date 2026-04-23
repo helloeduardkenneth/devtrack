@@ -128,9 +128,6 @@ export const useBulkUpdateStatusMutation = (onSuccess?: () => void) => {
     })
 }
 
-// ID	Company	Position	Location	Status	Applied Date	Last Updated	Salary Range	Priority
-
-
 export const useBulkDeleteMutation = (onSuccess?: () => void) => {
     const queryClient = useQueryClient()
 
@@ -157,6 +154,43 @@ export const useBulkDeleteMutation = (onSuccess?: () => void) => {
             }
 
             toast.error('Failed to delete applications.')
+        },
+    })
+}
+
+export const useUpdateApplicationStatusMutation = (
+    onSuccess?: () => void,
+    onError?: (error: string) => void,
+) => {
+    const queryClient = useQueryClient()
+
+    return useMutation({
+        mutationKey: queryKeys.applications.update,
+        mutationFn: ({
+            id,
+            status,
+        }: {
+            id: number
+            status: AddJobPayload['status']
+        }) => updateApplicationById(id, { status }),
+        onSuccess: async () => {
+            await queryClient.invalidateQueries({
+                queryKey: queryKeys.applications.list,
+            })
+            toast.success('Status updated successfully.')
+            onSuccess?.()
+        },
+        onError: (error) => {
+            if (axios.isAxiosError(error)) {
+                const message =
+                    error.response?.data?.error || 'Failed to update status.'
+                toast.error(message)
+                onError?.(message)
+                return
+            }
+
+            toast.error('Failed to update status.')
+            onError?.('Failed to update status.')
         },
     })
 }
