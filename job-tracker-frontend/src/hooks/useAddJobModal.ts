@@ -23,6 +23,7 @@ type UseAddJobModalParams = {
     onClose: () => void
     editMode?: boolean
     initialData?: Partial<AddJobFormValues> & { id: number }
+    defaultStatus?: string
 }
 
 export const useAddJobModal = ({
@@ -30,6 +31,7 @@ export const useAddJobModal = ({
     onClose,
     editMode = false,
     initialData,
+    defaultStatus,
 }: UseAddJobModalParams) => {
     const [isAiProcessing, setIsAiProcessing] = useState(false)
     const [companyLogo, setCompanyLogo] = useState<string | null>(null)
@@ -165,8 +167,15 @@ export const useAddJobModal = ({
             reset(ADD_JOB_DEFAULT_VALUES)
             setCompanyLogo(null)
             setLogoFile(null)
+            // Set default status if provided (for quick-add from Kanban)
+            if (defaultStatus) {
+                setValue('status', defaultStatus, {
+                    shouldDirty: false,
+                    shouldValidate: true,
+                })
+            }
         }
-    }, [isOpen, editMode, initialData, reset])
+    }, [isOpen, editMode, initialData, reset, defaultStatus, setValue])
 
     const onSubmit = (values: AddJobFormValues) => {
         if (editMode && initialData?.id) {

@@ -47,6 +47,7 @@ interface AddJobModalProps {
     onClose: () => void
     editMode?: boolean
     initialData?: Partial<AddJobFormValues> & { id: number }
+    defaultStatus?: string
 }
 
 const AddJobModal = ({
@@ -54,6 +55,7 @@ const AddJobModal = ({
     onClose,
     editMode = false,
     initialData,
+    defaultStatus,
 }: AddJobModalProps) => {
     const {
         form,
@@ -87,6 +89,7 @@ const AddJobModal = ({
         onClose,
         editMode,
         initialData,
+        defaultStatus,
     })
 
     if (!isOpen) return null
